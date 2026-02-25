@@ -1,0 +1,18 @@
+{% if not query %}
+<pre class="context-preview-empty">Type a question and click "Test Retrieval" to inspect source chunks.</pre>
+{% elif results %}
+<div>
+  <p><strong>{{ results|length }}</strong> source document(s) matched. top_k={{ top_k }}</p>
+  {% for doc, score in results %}
+  <article style="border:1px solid #e7ebf1; border-radius:8px; padding:10px; margin-bottom:10px; background:#fbfdff;">
+    <div style="display:flex; justify-content:space-between; gap:8px; align-items:baseline;">
+      <strong>{{ forloop.counter }}. {{ doc.title }}</strong>
+      <code>score={{ score|floatformat:4 }}</code>
+    </div>
+    <pre style="margin:8px 0 0; white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;">{{ doc.full_text|truncatechars:700 }}</pre>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<pre class="context-preview-empty">No relevant documents were found for this query.</pre>
+{% endif %}

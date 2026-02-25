@@ -1,0 +1,87 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .retrieval-lab {
+    margin: 14px 0 24px;
+    padding: 14px;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #fafbfd 100%);
+  }
+  .retrieval-lab h2 {
+    margin: 0 0 10px;
+    font-size: 15px;
+  }
+  .retrieval-lab-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 10px;
+  }
+  .retrieval-lab-form p {
+    margin: 0;
+  }
+  .retrieval-lab .retrieval-results {
+    border-top: 1px solid #e5e8ef;
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+  .retrieval-lab .retrieval-results ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+  .retrieval-lab .retrieval-results li {
+    margin-bottom: 8px;
+  }
+  .retrieval-lab .score {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #0f5f6b;
+    margin-left: 6px;
+  }
+</style>
+{% endblock %}
+
+{% block object-tools-items %}
+{{ block.super }}
+<li>
+  <a href="{{ reindex_all_url }}" class="historylink">Re-index All</a>
+</li>
+{% endblock %}
+
+{% block search %}
+{{ block.super }}
+<section class="retrieval-lab">
+  <h2>Retrieval Lab</h2>
+  <form method="get" class="retrieval-lab-form">
+    {% for key, value in request.GET.items %}
+      {% if key != "retrieval_query" and key != "retrieval_top_k" %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endif %}
+    {% endfor %}
+    {{ retrieval_form.retrieval_query }}
+    {{ retrieval_form.retrieval_top_k }}
+    <button type="submit" class="button">Test Retrieval</button>
+  </form>
+
+  {% if retrieval_submitted %}
+  <div class="retrieval-results">
+    {% if retrieval_results %}
+    <ul>
+      {% for item in retrieval_results %}
+      <li>
+        <strong>{{ forloop.counter }}. {{ item.document.title }}</strong>
+        <span class="score">score={{ item.score|floatformat:4 }}</span>
+        <div>{{ item.preview }}</div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>No relevant documents found for this query.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

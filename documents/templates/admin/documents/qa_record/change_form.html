@@ -1,0 +1,140 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .inference-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr);
+    align-items: start;
+  }
+  .inference-grid .module {
+    margin-bottom: 0;
+  }
+  .inference-preview {
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    position: sticky;
+    top: 10px;
+  }
+  .inference-preview__header {
+    padding: 12px;
+    border-bottom: 1px solid #eceff3;
+    background: linear-gradient(180deg, #fcfdff 0%, #f4f7fb 100%);
+  }
+  .inference-preview__header h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+  .inference-preview__controls {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .inference-preview__controls input {
+    width: 84px;
+  }
+  .inference-preview__body {
+    padding: 12px;
+    max-height: 62vh;
+    overflow: auto;
+  }
+  .context-preview-empty {
+    margin: 0;
+    color: #5a6673;
+    white-space: pre-wrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (max-width: 980px) {
+    .inference-grid {
+      grid-template-columns: 1fr;
+    }
+    .inference-preview {
+      position: static;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block field_sets %}
+<div class="inference-grid">
+  <div>
+    {{ block.super }}
+  </div>
+  <aside class="inference-preview">
+    <div class="inference-preview__header">
+      <h2>Context Preview</h2>
+      <div class="inference-preview__controls">
+        <label for="retrieval-top-k"><strong>Top K</strong></label>
+        <input id="retrieval-top-k" type="number" min="1" max="20" value="{{ default_top_k }}">
+        <button type="button" id="test-retrieval-btn" class="button">
+          Test Retrieval
+        </button>
+      </div>
+    </div>
+    <div id="retrieval-preview" class="inference-preview__body">
+      <pre class="context-preview-empty">{{ existing_context_preview }}</pre>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script>
+  (function () {
+    const formTopK = document.getElementById("id_top_k");
+    const panelTopK = document.getElementById("retrieval-top-k");
+    const questionInput = document.getElementById("id_question");
+    const previewBox = document.getElementById("retrieval-preview");
+    const testButton = document.getElementById("test-retrieval-btn");
+    const testUrl = "{{ test_retrieval_url|escapejs }}";
+
+    function runRetrievalPreview() {
+      if (!previewBox || !testButton) {
+        return;
+      }
+      const query = questionInput ? questionInput.value : "";
+      const topK = panelTopK ? panelTopK.value : "{{ default_top_k }}";
+      const params = new URLSearchParams({ query: query, top_k: topK });
+      const requestUrl = testUrl + "?" + params.toString();
+
+      testButton.disabled = true;
+      fetch(requestUrl, { credentials: "same-origin" })
+        .then(function (response) {
+          return response.text();
+        })
+        .then(function (html) {
+          previewBox.innerHTML = html;
+        })
+        .catch(function () {
+          previewBox.innerHTML = "<pre class=\"context-preview-empty\">Failed to load retrieval preview.</pre>";
+        })
+        .finally(function () {
+          testButton.disabled = false;
+        });
+    }
+
+    if (testButton) {
+      testButton.addEventListener("click", runRetrievalPreview);
+    }
+
+    if (!formTopK || !panelTopK) {
+      return;
+    }
+    if (formTopK.value) {
+      panelTopK.value = formTopK.value;
+    }
+    panelTopK.addEventListener("change", function () {
+      formTopK.value = panelTopK.value;
+    });
+    formTopK.addEventListener("change", function () {
+      panelTopK.value = formTopK.value;
+    });
+  }());
+</script>
+{% endblock %}
